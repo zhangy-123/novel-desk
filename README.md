@@ -14,7 +14,9 @@
 - ✅ **历史版本（快照）面板**：查看 + 一键恢复
 - ✅ **码字统计**：实时字数（CJK 口径）、本次会话增量、保存状态；`word_count_log` 表已备好日/周曲线数据
 - ✅ **移动端样式适配**（侧栏收纳为顶部条，触控友好）
+- ✅ **导出与备份**：全书导出 Markdown / 全量 JSON 备份 / 从备份导入恢复（`src/lib/backup.ts`）
 - ✅ **纯浏览器调试模式**：不装 Rust 也能 `npm run dev` 开发 UI（自动降级 localStorage mock）
+- ✅ **GitHub Actions 云编译**：`.github/workflows/build.yml`，一键出 Win/macOS/Linux 安装包
 
 ## 运行
 
@@ -25,17 +27,42 @@ npm install
 npm run dev        # 打开 http://localhost:1420，数据存 localStorage
 ```
 
-### 方式二：完整桌面 App（需先安装 Rust）
+### 方式二：云编译出安装包（当前采用，本地无需 Rust / VS Build Tools）
+
+本地只负责写代码和预览，编译交给 GitHub 的免费服务器：
 
 ```bash
-# 1. 安装 Rust（Windows 需再装 Visual Studio C++ Build Tools）
-#    https://rustup.rs
+# 1. 本地预览（浏览器模式，数据存 localStorage）
+npm run dev
 
-# 2. 启动开发模式（首次编译约 3-10 分钟）
-npm run tauri dev
+# 2. 推到 GitHub（首次）
+git remote add origin https://github.com/<你的账号>/<仓库名>.git
+git branch -M main
+git push -u origin main
 
-# 3. 打包安装包（.msi / .exe / .dmg / .deb）
-npm run tauri build
+# 3. 触发云编译（二选一）
+#   a) GitHub 页面：Actions → Build Desktop Apps → Run workflow
+#   b) 打 tag 自动触发：
+git tag v0.1.0 && git push --tags
+
+# 4. 约 6-10 分钟后：Actions 运行详情页底部 Artifacts 下载
+#    novel-desk-windows-latest.zip → 内含 .msi（安装包）/ .exe（绿色版）
+#    novel-desk-macos-latest.zip   → 内含 .dmg
+#    novel-desk-ubuntu-22.04.zip   → 内含 .deb / .AppImage
+```
+
+注意：
+- 工作流文件在 `.github/workflows/build.yml`，**仓库根目录必须是 `novel-desk` 这一层**（即 `package.json` 在根）
+- 产物**未做代码签名**：Windows 首次运行会被 SmartScreen 拦（点"更多信息 → 仍要运行"）；macOS 需右键 → 打开，并执行 `xattr -dr com.apple.quarantine /Applications/NovelDesk.app`
+- 云编译同时充当编译检查：Rust 代码有语法错误会在 Actions 日志里直接看到
+
+### 附：本地编译（需要 Rust，占 6-8 GB，本方案已跳过）
+
+```bash
+# 安装 Rust（Windows 需再装 Visual Studio C++ Build Tools）
+# https://rustup.rs
+npm run tauri dev     # 开发模式
+npm run tauri build   # 打包
 ```
 
 ### 方式三：移动端
